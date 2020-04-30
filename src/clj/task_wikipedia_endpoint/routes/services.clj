@@ -10,7 +10,8 @@
     [task-wikipedia-endpoint.middleware.formats :as formats]
     [task-wikipedia-endpoint.middleware.exception :as exception]
     [ring.util.http-response :refer :all]
-    [clojure.java.io :as io]))
+    [clojure.java.io :as io]
+    [task-wikipedia-endpoint.routes.functions :as functions]))
 
 (defn service-routes []
   ["/api"
@@ -51,16 +52,19 @@
     {:get (constantly (ok {:message "pong"}))}]
    
 
-   ["/math"
-    {:swagger {:tags ["math"]}}
+   [""
+    {:swagger {:tags ["Task"]}}
 
-    ["/plus"
+    ["/book"
+    {:get (constantly (ok {:name (functions/take-book-from-shelf)}))}]
+
+    ["/add"
      {:get {:summary "plus with spec query parameters"
             :parameters {:query {:x int?, :y int?}}
             :responses {200 {:body {:total pos-int?}}}
             :handler (fn [{{{:keys [x y]} :query} :parameters}]
                        {:status 200
-                        :body {:total (+ x y)}})}
+                         :body {:total (functions/add-two-numbers x y)}})}
       :post {:summary "plus with spec body parameters"
              :parameters {:body {:x int?, :y int?}}
              :responses {200 {:body {:total pos-int?}}}

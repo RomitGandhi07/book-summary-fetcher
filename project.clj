@@ -9,6 +9,7 @@
                  [conman "0.8.7"]
                  [cprop "0.1.16"]
                  [expound "0.8.4"]
+                 [failjure "2.0.0"]
                  [funcool/struct "1.4.0"]
                  [luminus-jetty "0.1.9"]
                  [luminus-migrations "0.6.7"]
@@ -29,6 +30,7 @@
                  [org.webjars/webjars-locator "0.39"]
                  [ring-webjars "0.2.0"]
                  [ring/ring-core "1.8.0"]
+                 [ring-mock "0.1.5"]
                  [ring/ring-defaults "0.3.2"]
                  [selmer "1.12.22"]]
 
