@@ -6,6 +6,7 @@
   :dependencies [[ch.qos.logback/logback-classic "1.2.3"]
                  [cheshire "5.10.0"]
                  [clojure.java-time "0.3.2"]
+                 [clj-http "3.10.1"]
                  [conman "0.8.7"]
                  [cprop "0.1.16"]
                  [expound "0.8.4"]

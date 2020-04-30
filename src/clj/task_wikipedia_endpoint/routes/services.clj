@@ -58,13 +58,28 @@
     ["/book"
     {:get (constantly (ok {:name (functions/take-book-from-shelf)}))}]
 
+    ["/add/:x/:y"
+    {:get {:summary "add two numbers"
+           :parameters {:query {:x int?, :y int?}}
+           :responses {200 {:body {:total pos-int?}}}
+           :handler (fn [{{{:keys [x y]} :query} :parameters}]
+                       {:status 200
+                         :body {:total (functions/add-two-numbers x y)}})}}]
+
+    ["/wiki/:book-name"
+    {:get {:summary "Get the summary of the book name"
+           :parameters {:query {:book-name string?}}
+           :responses {200 {:body {string? string?}}}
+           :handler (fn [{{{:keys [:book-name]} :query} :parameters}]
+                       {:status 200
+                         :body {book-name book-name}})}}]
+
     ["/add"
      {:get {:summary "plus with spec query parameters"
             :parameters {:query {:x int?, :y int?}}
             :responses {200 {:body {:total pos-int?}}}
             :handler (fn [{{{:keys [x y]} :query} :parameters}]
-                       {:status 200
-                         :body {:total (functions/add-two-numbers x y)}})}
+                       (functions/add-two-numbers x y))}
       :post {:summary "plus with spec body parameters"
              :parameters {:body {:x int?, :y int?}}
              :responses {200 {:body {:total pos-int?}}}
