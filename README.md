@@ -2,7 +2,7 @@
 
 generated using Luminus version "3.69"
 
-FIXME
+The task is fetch the summary of the book from wikipedia.
 
 ## Prerequisites
 

@@ -60,19 +60,19 @@
 
     ["/add/:x/:y"
     {:get {:summary "add two numbers"
-           :parameters {:query {:x int?, :y int?}}
+           :coercion reitit.coercion.spec/coercion
+           :parameters {:path {:x int?, :y int?}}
            :responses {200 {:body {:total pos-int?}}}
-           :handler (fn [{{{:keys [x y]} :query} :parameters}]
-                       {:status 200
-                         :body {:total (functions/add-two-numbers x y)}})}}]
+           :handler (fn [{{{:keys [x y]} :path} :parameters}]
+                       (functions/add-two-numbers x y))}}]
 
-    ["/wiki/:book-name"
+    ["/wiki/:book-title"
     {:get {:summary "Get the summary of the book name"
-           :parameters {:query {:book-name string?}}
+           :coercion reitit.coercion.spec/coercion
+           :parameters {:path {:book-title string?}}
            :responses {200 {:body {string? string?}}}
-           :handler (fn [{{{:keys [:book-name]} :query} :parameters}]
-                       {:status 200
-                         :body {book-name book-name}})}}]
+           :handler (fn [{{{:keys [:book-title]} :path} :parameters}]
+                       (functions/get-book-summary book-title))}}]
 
     ["/add"
      {:get {:summary "plus with spec query parameters"
