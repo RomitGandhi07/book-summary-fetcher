@@ -63,14 +63,38 @@
                       summary (get (get (get (get search-results "query") "pages") (get-page-number-key search-results)) "extract")]
                 summary))
             false)))
-          
+
+(defn get-all-search-results
+    ;;This function is used to get the all the search results
+    ;;This fuctions accepts book-title argument
+    ;;It will return list of available pages if no of pages is greater then 1 else it will return ""
+    [book-title]
+    (let [URL (str search-url book-title)
+          search-results (json/read-str (:body (client/get URL)))]
+        (if (= 0 (count (get search-results 1)))
+            0
+            (get search-results 1))))
+
+(defn check-all-search-results
+    ;;This function is used to check all the available results present in search API
+    ;;It will accept list of available results present in search API 
+    ;;Then it will check evry string in content API that whether keywords are present or not upto gien threshhold
+    [available-pages]
+    (doseq [i available-pages])
+    )
 
 (defn get-book-summary
     ;;This function is used to get the summary of the book
     ;;It is taking one argument called book title
     [book-title]
     (let [summary (check-novel-wikipedia-results book-title)]
-    {:status 200 :body {book-title summary}}))
+    (if (= false summary)
+    (do
+        (let [available-pages (get-all-search-results book-title)]
+            (if (= 0 available-pages)
+             {:status 200 :body {book-title "No Result Found..."}}
+             (check-all-search-results available-pages))))
+    {:status 200 :body {book-title summary}})))
     
 
 
