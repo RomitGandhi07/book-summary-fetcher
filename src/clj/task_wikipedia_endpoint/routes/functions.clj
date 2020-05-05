@@ -70,12 +70,12 @@
     [book-title]
     (let [URL (str search-url book-title "(novel)")
           search-results (json/read-str (:body (client/get URL)))]
-        (if (= 1 (count (get search-results 1)))
+        (if (>= (count (get search-results 1)) 1)
             (do
                 (let [updated-URL (str summary-url (replace-space-with-underscore (get (get search-results 1) 0)))
-                      search-results (json/read-str (:body (client/get updated-URL)))
-                      summary (get-summary-from-API search-results)]
-                summary))
+                      updated-search-results (json/read-str (:body (client/get updated-URL)))
+                      summary (get-summary-from-API updated-search-results)]
+                {(get (get search-results 1) 0) summary}))
             false)))
 
 (defn get-all-search-results
@@ -142,8 +142,8 @@
                             (let [updated-URL (str summary-url (replace-space-with-underscore (get available-pages book-page-no)))
                                   search-results (json/read-str (:body (client/get updated-URL)))
                                   summary (get-summary-from-API search-results)]
-                                {:status 200 :body {book-title summary}})))))))
-            {:status 200 :body {book-title summary}})))
+                                {:status 200 :body {(get available-pages book-page-no) summary}})))))))
+            {:status 200 :body summary})))
     
 
 
