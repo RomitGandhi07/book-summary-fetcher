@@ -126,6 +126,12 @@
         final-book-page-no
         false)))
 
+(defn insert-summary-into-databse
+    ;;This Function is used to insert the summaruy into the database
+    [summary]
+    (let [title (nth (keys summary) 0)]
+    (db/insert-book-summary! {:title title :summary (get summary title)})))
+
 (defn get-book-summary
     ;;This function is used to get the summary of the book
     ;;It is taking one argument called book title
@@ -144,10 +150,9 @@
                                   search-results (json/read-str (:body (client/get updated-URL)))
                                   summary (get-summary-from-API search-results)]
                                 {:status 200 :body {(get available-pages book-page-no) summary}})))))))
-                (do
-                    (db/insert-book-summary! {:title "Demo" :summary "Demo"})
-                    {:status 200 :body summary}))))
-                
+        (do
+            (insert-summary-into-databse summary)
+            {:status 200 :body summary}))))
     
 
 

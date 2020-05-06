@@ -5,8 +5,7 @@
    [clojure.java.io :as io]
    [task-wikipedia-endpoint.middleware :as middleware]
    [ring.util.response]
-   [ring.util.http-response :as response]
-   [struct.core :as st]))
+   [ring.util.http-response :as response]))
 
 (defn home-page [request]
   (let [books (db/get-books-summary)]
