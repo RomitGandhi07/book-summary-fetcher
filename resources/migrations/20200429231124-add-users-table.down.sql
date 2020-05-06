@@ -1,1 +1,1 @@
-DROP TABLE books_summary;
+DROP TABLE books;

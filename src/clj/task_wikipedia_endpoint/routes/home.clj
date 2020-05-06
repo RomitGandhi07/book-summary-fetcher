@@ -5,13 +5,18 @@
    [clojure.java.io :as io]
    [task-wikipedia-endpoint.middleware :as middleware]
    [ring.util.response]
-   [ring.util.http-response :as response]))
+   [ring.util.http-response :as response]
+   [struct.core :as st]))
 
 (defn home-page [request]
-  (layout/render request "home.html" {:docs (-> "docs/docs.md" io/resource slurp)}))
+  (let [books (db/get-books-summary)]
+  (layout/render request "home.html" {:books books})))
 
 (defn about-page [request]
   (layout/render request "about.html"))
+
+(defn search-book-page [request]
+  (layout/render request "search-book.html"))
 
 (defn home-routes []
   [""

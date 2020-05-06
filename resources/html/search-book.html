@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+
+  <div class="jumborton">
+    <h1><b>Search for the summary of the book</b></h1>
+  </div>
+  <form method="GET" action="/wiki">
+    {% csrf-field %}
+    <p>Book Title</p>
+    <input class="form-control" type="text" name="title">
+    <input type="submit">
+  </form>
+{% endblock %}

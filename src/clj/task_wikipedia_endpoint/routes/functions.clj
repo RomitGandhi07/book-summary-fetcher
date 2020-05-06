@@ -3,7 +3,8 @@
         [failjure.core :as f]
         [clj-http.client :as client]
         [clojure.data.json :as json]
-        [clojure.string :as string]))
+        [clojure.string :as string]
+        [task-wikipedia-endpoint.db.core :as db]))
 
 (defn validate-numbers
     ;;"This function is used to validate 2 numbers"
@@ -143,7 +144,10 @@
                                   search-results (json/read-str (:body (client/get updated-URL)))
                                   summary (get-summary-from-API search-results)]
                                 {:status 200 :body {(get available-pages book-page-no) summary}})))))))
-            {:status 200 :body summary})))
+                (do
+                    (db/insert-book-summary! {:title "Demo" :summary "Demo"})
+                    {:status 200 :body summary}))))
+                
     
 
 
