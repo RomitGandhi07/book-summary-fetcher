@@ -127,10 +127,13 @@
         false)))
 
 (defn insert-summary-into-databse
-    ;;This Function is used to insert the summaruy into the database
+    ;;This Function is used to insert the summary into the database
+    ;;It accepts the {book-title summary} as input and insert that into the books table
     [summary]
-    (let [title (nth (keys summary) 0)]
-    (db/insert-book-summary! {:title title :summary (get summary title)})))
+    (let [title (nth (keys summary) 0)
+          count (db/check-book-exist {:title title})]
+        (if (= (get count :count) 0)
+            (db/insert-book-summary! {:title title :summary (get summary title)}))))
 
 (defn get-book-summary
     ;;This function is used to get the summary of the book
@@ -148,8 +151,9 @@
                         (do
                             (let [updated-URL (str summary-url (replace-space-with-underscore (get available-pages book-page-no)))
                                   search-results (json/read-str (:body (client/get updated-URL)))
-                                  summary (get-summary-from-API search-results)]
-                                {:status 200 :body {(get available-pages book-page-no) summary}})))))))
+                                  summary {(get available-pages book-page-no) (get-summary-from-API search-results)}]
+                                  (insert-summary-into-databse summary)
+                                {:status 200 :body summary})))))))
         (do
             (insert-summary-into-databse summary)
             {:status 200 :body summary}))))
