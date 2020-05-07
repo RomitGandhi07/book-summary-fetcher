@@ -1,28 +1,28 @@
 (ns task-wikipedia-endpoint.routes.functions
-    (:require
-        [failjure.core :as f]
-        [clj-http.client :as client]
-        [clojure.data.json :as json]
-        [clojure.string :as string]
-        [task-wikipedia-endpoint.db.core :as db]))
+  (:require
+    [failjure.core :as f]
+    [clj-http.client :as client]
+    [clojure.data.json :as json]
+    [clojure.string :as string]
+    [task-wikipedia-endpoint.db.core :as db]))
 
 (defn validate-numbers
-    ;;"This function is used to validate 2 numbers"
-    ;;"It will check both the numbers are of integer type of not"
-    [first-number second-number]
-    (if (and (integer? first-number) (integer? second-number))
-        (+ first-number second-number)
-        (f/fail "Please Enter Valid Number")))
+  "This function is used to validate 2 numbers
+   It will check both the numbers are of integer type of not"
+  [first-number second-number]
+  (if (and (integer? first-number) (integer? second-number))
+    (+ first-number second-number)
+    (f/fail "Please Enter Valid Number")))
 
 (defn add-two-numbers
-    ;;"This function is used to add two integer numbers"
-    ;;"accepts 2 integer parametrs first-number & second-number"
-    ;;"returns the total of both number"
-    [first-number second-number]
-    (f/attempt-all [addition (validate-numbers first-number second-number)]
-        {:status 200 :body {:total addition}}
-     (f/when-failed [e]
-         {:status 400 :body {:total 0}})))
+  ;;"This function is used to add two integer numbers"
+  ;;"accepts 2 integer parametrs first-number & second-number"
+  ;;"returns the total of both number"
+  [first-number second-number]
+  (f/attempt-all [addition (validate-numbers first-number second-number)]
+    {:status 200 :body {:total addition}}
+    (f/when-failed [e]
+      {:status 400 :body {:total 0}})))
 
 (defn add-two-numbers-demo
     ;;"This function is used to add two integer numbers"
@@ -38,25 +38,26 @@
 
 (def search-url "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=")
 (def content-url "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=")
-(def summary-url "https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles=")
+(def summary-url "https://en.wikipedia.org/api/rest_v1/page/summary/")
 (def book-keywords ["author","country","language","genre","publisher","published","publication","pages"])
 
-(defn replace-space-with-underscore
-    ;;This fuction is used replace space with underscore
-    [book-title]
-    (string/replace book-title #" " "_"))
+(defn spaces->underscores
+  "Returns the String where spaces are replaces with underscoers
+  Expects  that book-title is a string"
+  [book-title]
+  (string/replace book-title #" " "_"))
 
 (defn get-page-number-key
-    ;;This function is used to get the page number key in the content URL
-    ;;It accepts body content & returns the page-number
-    [search-results]
-    (nth (keys (get (get search-results "query") "pages")) 0))
+  "This function is used to get the page number key in the content URL
+  It accepts body content & returns the page-number"
+  [search-results]
+  (nth (keys (get (get search-results "query") "pages")) 0))
 
-(defn get-summary-from-API
-    ;;This function is used to get the summary from the the API which will be responded back to the user;
-    ;;It accepts body part of the API & It returns the summary from it.
-    [search-results]
-    (get (get (get (get search-results "query") "pages") (get-page-number-key search-results)) "extract"))
+(defn summary-from-Wikipedia-result
+  "Returns map {book-name summary} using search-results(map) with keys:\"title\",\"extract\" 
+  This function is used to extract the sumary from the wikipedia."
+  [search-results]
+  (get search-results "title") (get search-results "extract"))
 
 (defn get-content-from-API
     ;;This function is used to get the content from the API which will be used to check keywords
@@ -73,9 +74,9 @@
           search-results (json/read-str (:body (client/get URL)))]
         (if (>= (count (get search-results 1)) 1)
             (do
-                (let [updated-URL (str summary-url (replace-space-with-underscore (get (get search-results 1) 0)))
+                (let [updated-URL (str summary-url (spaces->underscores (get (get search-results 1) 0)))
                       updated-search-results (json/read-str (:body (client/get updated-URL)))
-                      summary (get-summary-from-API updated-search-results)]
+                      summary (summary-from-Wikipedia-result updated-search-results)]
                 {(get (get search-results 1) 0) summary}))
             false)))
 
@@ -94,7 +95,7 @@
     ;;Ths function is used to check the how many keywords are present in the content API
     ;;It will accept page-name as a input and returns no of matching keywords
     [page-name]
-    (let [updated-URL (str content-url (replace-space-with-underscore page-name))
+    (let [updated-URL (str content-url (spaces->underscores page-name))
           search-results (json/read-str (:body (client/get updated-URL)))
           content (get-content-from-API search-results)
           keyword-match (atom 0)]
@@ -149,9 +150,9 @@
                     (if (= book-page-no false)
                         {:status 200 :body {book-title "No Result Found..."}}
                         (do
-                            (let [updated-URL (str summary-url (replace-space-with-underscore (get available-pages book-page-no)))
+                            (let [updated-URL (str summary-url (spaces->underscores (get available-pages book-page-no)))
                                   search-results (json/read-str (:body (client/get updated-URL)))
-                                  summary {(get available-pages book-page-no) (get-summary-from-API search-results)}]
+                                  summary {(get available-pages book-page-no) (summary-from-Wikipedia-result search-results)}]
                                   (insert-summary-into-databse summary)
                                 {:status 200 :body summary})))))))
         (do
