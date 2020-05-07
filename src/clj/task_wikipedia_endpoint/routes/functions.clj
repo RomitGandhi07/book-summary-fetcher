@@ -15,9 +15,8 @@
     (f/fail "Please Enter Valid Number")))
 
 (defn add-two-numbers
-  "This function is used to add two integer numbers
-   accepts 2 integer parametrs first-number & second-number
-   returns the total of both number"
+  "Returns the total of 2 numbers using 2 integer numbers.
+   This function is used to sum 2 numbers"
   [first-number second-number]
   (f/attempt-all [addition (validate-numbers first-number second-number)]
     {:status 200 :body {:total addition}}
@@ -25,9 +24,8 @@
       {:status 400 :body {:total 0}})))
 
 (defn add-two-numbers-demo
-  "This function is used to add two integer numbers
-   accepts 2 integer parametrs first-number & second-number
-   returns the total of both number"
+  "Returns the total of 2 numbers using 2 integer numbers.
+   This function is used to sum 2 numbers"
   [first-number second-number]
   (+ first-number second-number))
 
@@ -65,123 +63,88 @@
    It accepts body part of the API & It returns the content from it."
   [search-results]
   (let [page-id (page-id-from-wikipedia-result search-results)]
-  ;;(get (get (get (get (get (get search-results "query") "pages") (page-id-from-wikipedia-result search-results)) "revisions") 0) "*")
   (get-in search-results ["query" "pages" page-id "revisions" 0 "*"])))
 
 (defn check-novel-wikipedia-results
-  "Returns Returns map {book-name summary} using book-title string given by user
+  "Returns Returns map {book-name summary} using book-title string
    This function is used to check whether any wikipedia page available with (novel) or not
    If it is available then it will return the map with structure with above mentioned"
   [book-title]
   (let [wikipedia-URL (str search-url book-title "(novel)")
-        search-results (json/read-str (:body (client/get URL)))]
+        search-results (json/read-str (:body (client/get wikipedia-URL)))]
     (if (>= (count (get search-results 1)) 1)
-      (let [updated-URL (str summary-url (spaces->underscores (get (get search-results 1) 0)))
-            updated-search-results (json/read-str (:body (client/get updated-URL)))
+      (let [updated-wikipedia-URL (str summary-url (spaces->underscores (get (get search-results 1) 0)))
+            updated-search-results (json/read-str (:body (client/get updated-wikipedia-URL)))
             summary (summary-from-Wikipedia-result updated-search-results)]
         summary))))
 
 (defn get-all-search-results
-    ;;This function is used to get the all the search results
-    ;;This fuctions accepts book-title argument
-    ;;It will return list of available pages if no of pages is greater then 1 else it will return ""
-    [book-title]
-    (let [URL (str search-url book-title)
-          search-results (json/read-str (:body (client/get URL)))]
-        (if (= 0 (count (get search-results 1)))
-            0
-            (get search-results 1))))
+  "Returns list of available pages using book-title string
+   This function is used to return the valid list of pages name which are similar to book-title"
+  [book-title]
+  (let [wikipedia-URL (str search-url book-title)
+        search-results (json/read-str (:body (client/get wikipedia-URL)))]
+    (if (not= 0 (count (get search-results 1)))
+      (get search-results 1))))
 
 (defn check-search-result
-    ;;Ths function is used to check the how many keywords are present in the content API
-    ;;It will accept page-name as a input and returns no of matching keywords
-    [page-name]
-    (let [updated-URL (str content-url (spaces->underscores page-name))
-          search-results (json/read-str (:body (client/get updated-URL)))
-          content (get-content-from-API search-results)
-          keyword-match (atom 0)]
-        (doseq [keyword book-keywords]
-            (if (string/includes? content keyword)
-                (swap! keyword-match inc)))
-        (if (>= @keyword-match 5)
-            true
-            false)))
+  "Returns true if no of matching keywords are more then 4 
+   This function is used to check the how many keywords are present in the content API"
+  [page-name]
+  (let [wikipedia-URL (str content-url (spaces->underscores page-name))
+        search-results (json/read-str (:body (client/get wikipedia-URL)))
+        content (get-content-from-API search-results)
+        keyword-match (atom 0)]
+    (doseq [keyword book-keywords]
+      (if (string/includes? content keyword)
+        (swap! keyword-match inc)))
+    (if (>= @keyword-match 5)
+      true)))
 
 (defn check-all-search-results
-    ;;This function is used to check all the available results present in search API
-    ;;It will accept list of available results present in search API 
-    ;;Then it will check evry string in content API that whether keywords are present or not upto gien threshhold
-    [available-pages]
-    (let [no-of-pages (count available-pages)
-          page-no (atom 0)]
-
+  "Returns idex of page from available valid pages list if any page contains more then 4 keywords using valid pages name list"
+  [available-pages]
+  (let [no-of-pages (count available-pages)
+        page-no (atom 0)]
     (while (< @page-no no-of-pages)
-        (let [is-book (check-search-result (get available-pages @page-no))]
-            (if (= true is-book)
-                (do
-                    (def final-book-page-no @page-no)
-                    (reset! page-no 11))
-                (do
-                    (swap! page-no inc)))))
-
+      (let [is-book (check-search-result (get available-pages @page-no))]
+        (if (= true is-book)
+          (do
+            (def final-book-page-no @page-no)
+            (reset! page-no 11))
+          (do
+            (swap! page-no inc)))))
     (if (= @page-no 11)
-        final-book-page-no
-        false)))
+      final-book-page-no)))
 
 (defn insert-summary-into-databse
-    ;;This Function is used to insert the summary into the database
-    ;;It accepts the {book-title summary} as input and insert that into the books table
-    [summary]
-    (let [title (nth (keys summary) 0)
-          count (db/check-book-exist {:title title})]
-        (if (= (get count :count) 0)
-            (db/insert-book-summary! {:title title :summary (get summary title)}))))
+  "This Function is used to insert the summary into the database
+  using the {book-title summary} as input and insert that into the books table"
+  [summary]
+  (let [title (nth (keys summary) 0)
+        count (db/check-book-exist {:title title})]
+    (if (= (get count :count) 0)
+      (db/insert-book-summary! {:title title :summary (get summary title)}))))
 
 (defn get-book-summary
-    ;;This function is used to get the summary of the book
-    ;;It is taking one argument called book title
-    [book-title]
-    (let [summary (check-novel-wikipedia-results book-title)]
-    (if (= false summary)
-        (do
-            (let [available-pages (get-all-search-results book-title)]
-                (if (= 0 available-pages)
-                {:status 200 :body {book-title "No Result Found..."}}  
-                (let [book-page-no (check-all-search-results available-pages)]
-                    (if (= book-page-no false)
-                        {:status 200 :body {book-title "No Result Found..."}}
-                        (do
-                            (let [updated-URL (str summary-url (spaces->underscores (get available-pages book-page-no)))
-                                  search-results (json/read-str (:body (client/get updated-URL)))
-                                  summary {(get available-pages book-page-no) (summary-from-Wikipedia-result search-results)}]
-                                  (insert-summary-into-databse summary)
-                                {:status 200 :body summary})))))))
-        (do
-            (insert-summary-into-databse summary)
-            {:status 200 :body summary}))))
-    
-
-
-;;(doseq [i (string/split (:body a) #",")]
-;;#_=> (println i))
-;;["The_Glass_Bead_Game"
-;;["The Glass Bead Game"
-;;"The Glass Bead Game (album)"]
-;;[""
-;;""]
-;;["https://en.wikipedia.org/wiki/The_Glass_Bead_Game"
-;;"https://en.wikipedia.org/wiki/The_Glass_Bead_Game_(album)"]]
-;;(apply str (remove #((set chars) %) coll)))
-
-;;(def a (json/read-str (:body (client/get "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=The_Glass_Bead_Game"))))
-;;(doseq [i a]
-;;(println i))
-;;The_Glass_Bead_Game
-;;[The Glass Bead Game The Glass Bead Game (album)]
-;;[ ]
-;;[https://en.wikipedia.org/wiki/The_Glass_Bead_Game https://en.wikipedia.org/wiki/The_Glass_Bead_Game_(album)]
-;;(get (get a 1) 0)
-;;"The Glass Bead Game"
-
-;;user=> (clojure.string/replace (get (get a 1) 0) #" " "_")
-;;"The_Glass_Bead_Game"
+  "Returns map {book-title summary} using book-title given by user is valid book title
+   Returns map {book-title No Result Found} using book-title given by user is not valid book title"
+  [book-title]
+  (let [summary (check-novel-wikipedia-results book-title)]
+    (if (= nil summary)
+      (do
+        (let [available-pages (get-all-search-results book-title)]
+          (if (= nil available-pages)
+            {:status 200 :body {book-title "No Result Found..."}}  
+              (let [book-page-no (check-all-search-results available-pages)]
+                 (if (= book-page-no nil)
+                    {:status 200 :body {book-title "No Result Found..."}}
+                    (do
+                      (let [updated-wikipedia-URL (str summary-url (spaces->underscores (get available-pages book-page-no)))
+                            search-results (json/read-str (:body (client/get updated-wikipedia-URL)))
+                            summary (summary-from-Wikipedia-result search-results)]
+                        (insert-summary-into-databse summary)
+                        {:status 200 :body summary})))))))
+      (do
+        (insert-summary-into-databse summary)
+        {:status 200 :body summary}))))
