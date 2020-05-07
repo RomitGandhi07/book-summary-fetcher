@@ -15,9 +15,9 @@
     (f/fail "Please Enter Valid Number")))
 
 (defn add-two-numbers
-  ;;"This function is used to add two integer numbers"
-  ;;"accepts 2 integer parametrs first-number & second-number"
-  ;;"returns the total of both number"
+  "This function is used to add two integer numbers
+   accepts 2 integer parametrs first-number & second-number
+   returns the total of both number"
   [first-number second-number]
   (f/attempt-all [addition (validate-numbers first-number second-number)]
     {:status 200 :body {:total addition}}
@@ -25,16 +25,17 @@
       {:status 400 :body {:total 0}})))
 
 (defn add-two-numbers-demo
-    ;;"This function is used to add two integer numbers"
-    ;;"accepts 2 integer parametrs first-number & second-number"
-    ;;"returns the total of both number"
-    [first-number second-number]
-    (+ first-number second-number))
+  "This function is used to add two integer numbers
+   accepts 2 integer parametrs first-number & second-number
+   returns the total of both number"
+  [first-number second-number]
+  (+ first-number second-number))
 
 (defn take-book-from-shelf 
-    ;;"This function is used to return the book-name"
-    []
-    (str "Hello"))
+  "Returns string \"hello\"
+   This function is used to return the book-name"
+  []
+  (str "Hello"))
 
 (def search-url "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=")
 (def content-url "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=")
@@ -43,42 +44,42 @@
 
 (defn spaces->underscores
   "Returns the String where spaces are replaces with underscoers
-  Expects  that book-title is a string"
+   Expects  that book-title is a string"
   [book-title]
   (string/replace book-title #" " "_"))
 
-(defn get-page-number-key
-  "This function is used to get the page number key in the content URL
-  It accepts body content & returns the page-number"
+(defn page-id-from-wikipedia-result
+  "Returns string by using search-results (map) with keys: \"query\" ,\"pages\" 
+   This function is used to to get the page id of the wikipedia page"
   [search-results]
-  (nth (keys (get (get search-results "query") "pages")) 0))
+  (nth (keys (get-in search-results ["query" "pages"])) 0))
 
 (defn summary-from-Wikipedia-result
   "Returns map {book-name summary} using search-results(map) with keys:\"title\",\"extract\" 
-  This function is used to extract the sumary from the wikipedia."
+   This function is used to extract the sumary from the wikipedia."
   [search-results]
-  (get search-results "title") (get search-results "extract"))
+  {(get search-results "title") (get search-results "extract")})
 
 (defn get-content-from-API
-    ;;This function is used to get the content from the API which will be used to check keywords
-    ;;It accepts body part of the API & It returns the content from it.
-    [search-results]
-    (get (get (get (get (get (get search-results "query") "pages") (get-page-number-key search-results)) "revisions") 0) "*"))
+  "This function is used to get the content from the API which will be used to check keywords
+   It accepts body part of the API & It returns the content from it."
+  [search-results]
+  (let [page-id (page-id-from-wikipedia-result search-results)]
+  ;;(get (get (get (get (get (get search-results "query") "pages") (page-id-from-wikipedia-result search-results)) "revisions") 0) "*")
+  (get-in search-results ["query" "pages" page-id "revisions" 0 "*"])))
 
 (defn check-novel-wikipedia-results
-    ;;This function is used to check whether any wikipedia link available with (novel) or not
-    ;;It will accept the argument book-title & the it will append (novel) at the end of it
-    ;;After that it will check seach URL wil give any results of it or not
-    [book-title]
-    (let [URL (str search-url book-title "(novel)")
-          search-results (json/read-str (:body (client/get URL)))]
-        (if (>= (count (get search-results 1)) 1)
-            (do
-                (let [updated-URL (str summary-url (spaces->underscores (get (get search-results 1) 0)))
-                      updated-search-results (json/read-str (:body (client/get updated-URL)))
-                      summary (summary-from-Wikipedia-result updated-search-results)]
-                {(get (get search-results 1) 0) summary}))
-            false)))
+  "Returns Returns map {book-name summary} using book-title string given by user
+   This function is used to check whether any wikipedia page available with (novel) or not
+   If it is available then it will return the map with structure with above mentioned"
+  [book-title]
+  (let [wikipedia-URL (str search-url book-title "(novel)")
+        search-results (json/read-str (:body (client/get URL)))]
+    (if (>= (count (get search-results 1)) 1)
+      (let [updated-URL (str summary-url (spaces->underscores (get (get search-results 1) 0)))
+            updated-search-results (json/read-str (:body (client/get updated-URL)))
+            summary (summary-from-Wikipedia-result updated-search-results)]
+        summary))))
 
 (defn get-all-search-results
     ;;This function is used to get the all the search results
