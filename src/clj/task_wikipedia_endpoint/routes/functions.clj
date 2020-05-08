@@ -87,6 +87,16 @@
     (if (not= 0 (count (get search-results 1)))
       (get search-results 1))))
 
+(defn keyword-match
+  "Returns the number which indicates number of matching keywords in the content using list of keywords & content" 
+  [keywords content]
+  (if (empty? keywords)
+    0
+    (let [keyword (nth keywords 0)]
+      (if (string/includes? content keyword)
+          (+ 1 (keyword-match (rest keywords) content))
+          (keyword-match (rest keywords) content)))))
+
 (defn check-search-result
   "Returns true if no of matching keywords are more then 4 
    This function is used to check the how many keywords are present in the content API"
@@ -94,11 +104,8 @@
   (let [wikipedia-URL (str content-url (spaces->underscores page-name))
         search-results (json/read-str (:body (client/get wikipedia-URL)))
         content (get-content-from-API search-results)
-        keyword-match (atom 0)]
-    (doseq [keyword book-keywords]
-      (if (string/includes? content keyword)
-        (swap! keyword-match inc)))
-    (if (>= @keyword-match 5)
+        matching-keywords (keyword-match book-keywords content)]
+    (if (>= matching-keywords 5)
       true)))
 
 (defn check-all-search-results
