@@ -4,6 +4,7 @@
     [clj-http.client :as client]
     [clojure.data.json :as json]
     [clojure.string :as string]
+    
     [task-wikipedia-endpoint.db.core :as db]))
 
 (defn validate-numbers
@@ -38,7 +39,7 @@
 (def search-url "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=")
 (def content-url "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=")
 (def summary-url "https://en.wikipedia.org/api/rest_v1/page/summary/")
-(def book-keywords ["author","country","language","genre","publisher","published","publication","pages"])
+(def book-keywords ["author","country","language","genre","publisher","published","publication","pages","novel"])
 
 (defn spaces->underscores
   "Returns the String where spaces are replaces with underscoers
@@ -54,13 +55,13 @@
 
 (defn summary-from-Wikipedia-result
   "Returns map {book-name summary} using search-results(map) with keys:\"title\",\"extract\" 
-   This function is used to extract the sumary from the wikipedia."
+   This function is used to extract the sumary from the wikipedia page."
   [search-results]
   {(get search-results "title") (get search-results "extract")})
 
-(defn get-content-from-API
-  "This function is used to get the content from the API which will be used to check keywords
-   It accepts body part of the API & It returns the content from it."
+(defn content-from-Wikipedia-result
+  "Returns string using search-results(map) with keys:\"query\",\"page\",page-id,\"revisiions\",0,\"*\" 
+   This function is used to extract the content from the wikipedia page."
   [search-results]
   (let [page-id (page-id-from-wikipedia-result search-results)]
   (get-in search-results ["query" "pages" page-id "revisions" 0 "*"])))
@@ -95,7 +96,7 @@
     (let [keyword (nth keywords 0)]
       (if (string/includes? content keyword)
           (+ 1 (keyword-match (rest keywords) content))
-          (keyword-match (rest keywords) content)))))
+          (recur (rest keywords) content)))))
 
 (defn check-search-result
   "Returns true if no of matching keywords are more then 4 
@@ -103,27 +104,22 @@
   [page-name]
   (let [wikipedia-URL (str content-url (spaces->underscores page-name))
         search-results (json/read-str (:body (client/get wikipedia-URL)))
-        content (get-content-from-API search-results)
+        content (content-from-Wikipedia-result search-results)
         matching-keywords (keyword-match book-keywords content)]
-    (if (>= matching-keywords 5)
+    (if (>= matching-keywords 6)
       true)))
 
 (defn check-all-search-results
   "Returns idex of page from available valid pages list if any page contains more then 4 keywords using valid pages name list"
   [available-pages]
-  (let [no-of-pages (count available-pages)
-        page-no (atom 0)]
-    (while (< @page-no no-of-pages)
-      (let [is-book (check-search-result (get available-pages @page-no))]
-        (if (= true is-book)
-          (do
-            (def final-book-page-no @page-no)
-            (reset! page-no 11))
-          (do
-            (swap! page-no inc)))))
-    (if (= @page-no 11)
-      final-book-page-no)))
-
+  (let [no-of-pages (count available-pages)]
+    (loop [page-no 0]
+      (when (< page-no no-of-pages)
+        (let [is-book (check-search-result (get available-pages page-no))]
+          (if (= is-book true)
+            page-no
+            (recur (inc page-no))))))))
+    
 (defn insert-summary-into-databse
   "This Function is used to insert the summary into the database
   using the {book-title summary} as input and insert that into the books table"

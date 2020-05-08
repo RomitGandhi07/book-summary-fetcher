@@ -9,6 +9,7 @@
                  [clj-http "3.10.1"]
                  [conman "0.8.7"]
                  [cprop "0.1.16"]
+                 [crouton "0.1.2"]  
                  [expound "0.8.4"]
                  [failjure "2.0.0"]
                  [funcool/struct "1.4.0"]
