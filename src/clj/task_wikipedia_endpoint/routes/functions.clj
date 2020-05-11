@@ -100,33 +100,28 @@
     (if (not (zero? (count (second search-results))))
       (second search-results))))
 
-(defn keyword-match
-  "Returns the number which indicates number of matching keywords in the content using list of keywords & content"
-  [content]
-  (reduce (fn [a b]
-            (if (string/includes? content b)
-              (inc a)
-              a))
-          0
-          book-keywords))
-
-(defn check-search-result
-  "Returns true if no of matching keywords are more then 4 
+(defn valid-wikipedia-book-page?
+  "Returns true if no of matching keywords are more then 6 
    This function is used to check the how many keywords are present in the content API"
   [page-name]
   (let [wikipedia-URL (str content-url (spaces->underscores page-name))
         search-results (search-result-of-URL wikipedia-URL)
         content (content-from-wikipedia-result search-results)
-        matching-keywords (keyword-match content)]
+        matching-keywords (reduce (fn [a b]
+                                    (if (string/includes? content b)
+                                      (inc a)
+                                      a))
+                                  0
+                                  book-keywords)]
     (>= matching-keywords 7)))
 
-(defn check-all-search-results
+(defn find-valid-wikipedia-book-page
   "Returns idex of page from available valid pages list if any page contains more then 4 keywords using valid pages name list"
   [available-pages]
   (let [no-of-pages (count available-pages)]
     (loop [page-no 0]
       (when (< page-no no-of-pages)
-        (let [is-book (check-search-result (get available-pages page-no))]
+        (let [is-book (valid-wikipedia-book-page? (get available-pages page-no))]
           (if (true? is-book)
             page-no
             (recur (inc page-no))))))))
@@ -140,7 +135,6 @@
     (if (zero? (get count :count))
       (db/insert-book-summary! {:title title :summary (get summary title)}))))
   
-
 (defn insert-and-return-summary
   "Returns Map {:status 200 :body {book-name summary}} using map with keys: \"book-title\", \"summary\"
    This function is used to insert the book-title and summary into the database and returns response of the wikipedia API request"
@@ -157,16 +151,14 @@
       (let [available-pages (get-all-search-results book-title)]
         (if (nil? available-pages)
           {:status 200 :body {book-title "No Result Found..."}}
-          (let [book-page-no (check-all-search-results available-pages)]
-            (if (= book-page-no nil)
+          (let [book-page-no (find-valid-wikipedia-book-page available-pages)]
+            (if (nil? book-page-no)
               {:status 200 :body {book-title "No Result Found..."}}
               (let [updated-wikipedia-URL (str summary-url (spaces->underscores (get available-pages book-page-no)))
                     search-results (search-result-of-URL updated-wikipedia-URL)
                     summary (summary-from-wikipedia-result search-results)]
                 (insert-and-return-summary summary))))))
       (insert-and-return-summary summary))))
-
-(get-book-summary "Beloved")
 
 (comment
   (nil? 1)
