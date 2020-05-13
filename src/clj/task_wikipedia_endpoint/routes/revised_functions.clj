@@ -3,8 +3,8 @@
    [failjure.core :as f]
    [clj-http.client :as client]
    [clojure.data.json :as json]
-   [task-wikipedia-endpoint.db.core :as db]
-   [slingshot.slingshot :only [throw+ try+]])
+   [clojure.string :as string]
+   [slingshot.slingshot :refer :all])
   (:use clojure.tools.logging))
 
 (def API "https://en.wikipedia.org/api/rest_v1/page/summary/")
@@ -36,6 +36,17 @@
     (if (not (nil? summary))
       {(get summary "title") (get summary "extract")})))
 
+(defn valid-wikipedia-book-page?
+  [book-title]
+  (let [summary (response-of-URL book-title)
+        description (string/lower-case (get summary "description"))
+        total-keywords (count keywords)]
+    (loop [i 0]
+      (when (< i total-keywords)
+        (if (string/includes? description (keywords i))
+          true
+          (recur (inc i)))))))
+
 (defn get-book-summary
   "Returns summary if the book title is valid otherwise return \"No Result Found\" using string book-title
    This function is used to get the book summary if book-title is valid"
@@ -49,7 +60,6 @@
   (:a {:a 1 :b 2})
   (get {"a" 1 "b" 2} "b")
   ("b" {"a" 5 "b" 2})
-
   (f/attempt-all [body (response-of-URL "The_Glass_Bead_game")]
                  {:status 200 :body {"Demo" "Yor are Lucky"}}
                  (f/when-failed [e]
