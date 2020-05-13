@@ -14,7 +14,7 @@
 (defn response-of-URL
   "Returns response body of the URL which is map with keys:\"type\" \"description\" \"title\" using string book-title
    This function is used to get body of the response of URl (https://en.wikipedia.org/api/rest_v1/page/summary/{book-title})
-   If the book-title is not valid page then it will retrn nil"
+   If the book-title is not valid wikipedia page then it will retrn nil"
   [book-title]
   (try+
    (-> API
@@ -22,8 +22,6 @@
        (client/get)
        (:body)
        (json/read-str))
-   (catch [:status 403] {:keys [request-time headers body]}
-     (warn "403" request-time headers))
    (catch [:status 404] {:keys [request-time headers body]}
      (warn "NOT Found 404" request-time headers body))
    (catch Object _
@@ -37,10 +35,12 @@
   book-title)
 
 
-
-
-
 (comment
+
+ (f/attempt-all [body (response-of-URL "The_Glass_Bead_game")]
+                {:status 200 :body {"Demo" "Yor are Lucky"}}
+                (f/when-failed [e]
+                               {:status 200 :body {"Demo" "No result Found"}})) 
   
  (def a (try+
          (-> API
@@ -67,15 +67,12 @@ a
   
   (:body (client/get (str API "The_glass_bead_Game") {:throw-entire-message? true}))
   
-  (try
-   (client/get (str API "The_glass_bead_Game"))
+  (try+
+   (-> API
+       (str "The_Glass_bead_Game")
+       (client/get)
+       (:body)
+       (json/read-str))
    (catch [:status 404] {:keys [request-time headers body]}
-     (log/warn "NOT Found 404" request-time headers body)))
-  
-  (f/attempt-all [body (response-of-URL "The_Glass_Bead_game")]
-                 {:status 200 :body {"Demo" "Yor are Lucky"}}
-                 (f/when-failed [e]
-                                {:status 200 :body {"Demo" "No result Found"}}))
-  
-  
+     (warn "NOT Found 404" request-time headers body)))  
   )
