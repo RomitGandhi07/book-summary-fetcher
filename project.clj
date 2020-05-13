@@ -34,7 +34,8 @@
                  [ring/ring-core "1.8.0"]
                  [ring-mock "0.1.5"]
                  [ring/ring-defaults "0.3.2"]
-                 [selmer "1.12.22"]]
+                 [selmer "1.12.22"]
+                 [slingshot "0.12.2"]]
 
   :min-lein-version "2.0.0"
   
