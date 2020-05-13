@@ -11,7 +11,7 @@
     [task-wikipedia-endpoint.middleware.exception :as exception]
     [ring.util.http-response :refer :all]
     [clojure.java.io :as io]
-    [task-wikipedia-endpoint.routes.functions :as functions]))
+    [task-wikipedia-endpoint.routes.revised-functions :as function]))
 
 (defn service-routes []
   ["/api"
@@ -72,7 +72,7 @@
            :parameters {:path {:book-title string?}}
            :responses {200 {:body {string? string?}}}
            :handler (fn [{{{:keys [:book-title]} :path} :parameters}]
-                       (functions/get-book-summary book-title))}}]
+                       (function/get-book-summary book-title))}}]
 
     ["/add"
      {:get {:summary "plus with spec query parameters"
